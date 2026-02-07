@@ -5,8 +5,8 @@ Performs all calf nutrition calculations with consistent units, rounding rules, 
 
 ## Scope
 - Unit conversions (lb/oz, qt/gal, °F/°C, Brix/IgG, solids %)
-- Mixing calculations (powder + water → final volume + final solids)
-- Volume expansion handling
+- Mixing calculations (powder + water → target final volume + solids %)
+- Volume displacement handling (powder displaces liquid)
 - Per-calf and batch totals
 - Rounding and formatting
 
@@ -21,34 +21,26 @@ Performs all calf nutrition calculations with consistent units, rounding rules, 
 - Temperature: Fahrenheit (°F)
 - Solids: percentage (%)
 
-### 2. Mixing Methods
+### 2. Mixing Method (Mix Into Target Volume)
 
-#### "Mix Into" (Target Volume Method)
-- **Definition:** Powder + water = target final volume
-- **Logic:** Powder displaces liquid, so you use LESS than target volume of water
-- **Volume displacement:** 1 lb powder ≈ 0.24 qt volume
-- **Formula:**
-  ```
-  Water needed (qt) = Target volume (qt) - [Powder (lb) × 0.24]
-  Final volume (qt) = Target volume (exactly)
-  ```
-- **Example:** To make 2 qt at 15% solids
-  - Powder: 4.8 oz (0.3 lb)
-  - Water: 2 - (0.3 × 0.24) = 1.93 qt
-  - Final: 2.0 qt at 15.0% solids
+**How it works:**
+- Powder + water = exact target volume
+- Powder displaces liquid, so you use LESS water than target volume
+- **Volume displacement factor:** 1 lb powder ≈ 0.24 qt volume
 
-#### "Mix Onto" (Full Water Method)
-- **Definition:** Powder added to full water volume → expanded final volume
-- **Logic:** Powder adds volume on top of water
-- **Formula:**
-  ```
-  Water (qt) = specified water amount
-  Final volume (qt) = Water (qt) + [Powder (lb) × 0.24]
-  ```
-- **Example:** 4.8 oz powder onto 2 qt water
-  - Powder: 4.8 oz (0.3 lb)
-  - Water: 2.0 qt
-  - Final: 2.07 qt at 14.5% solids
+**Formula:**
+```
+Water needed (qt) = Target volume (qt) - [Powder (lb) × 0.24]
+Final volume (qt) = Target volume (exactly as specified)
+```
+
+**Example:** To make 2 qt at 15% solids
+- Powder: 4.8 oz (0.3 lb)
+- Water: 2 - (0.3 × 0.24) = 1.93 qt → rounds to **1.75 qt**
+- Final: 2.0 qt at 15.0% solids
+
+**Why this matters:**
+If you ignore displacement and add 2 qt water + powder, you'll end up with >2 qt total and lower solids % than intended.
 
 ### 3. Solids Calculation
 ```
@@ -90,7 +82,6 @@ Temperature:
 ## Inputs
 
 ### Required
-- **Mixing method:** "into" or "onto"
 - **Target solids %:** (8–20%, typical 12–15%)
 - **Target volume per calf (qt):** (typical 1.5–3.0 qt)
 - **Number of calves:** (integer ≥ 1)
@@ -111,7 +102,6 @@ Per Calf:
 - Water: X.XX qt
 - Total Volume: X.XX qt
 - Solids: XX.X%
-- Mixing: [into/onto] method
 ```
 
 ### Batch Totals Display
@@ -135,26 +125,19 @@ Batch (Y calves):
 ### Step 1: Calculate Powder Needed
 ```
 For target solids % and volume:
-Powder (lb) = (Target_solids% / 100) × Final_volume_qt × 2
+Powder (lb) = (Target_solids% / 100) × Target_volume_qt × 2
 Powder (oz) = Powder_lb × 16
 ```
 
 ### Step 2: Calculate Water Needed
-
-**If "mix into":**
 ```
 Water (qt) = Target_volume_qt - (Powder_lb × 0.24)
 ```
 
-**If "mix onto":**
+### Step 3: Verify Solids %
 ```
-Water (qt) = Target_volume_qt
-Final_volume (qt) = Water_qt + (Powder_lb × 0.24)
-```
-
-### Step 3: Calculate Actual Solids %
-```
-Solids% = (Powder_lb / (Final_volume_qt × 2)) × 100
+Solids% = (Powder_lb / (Target_volume_qt × 2)) × 100
+(Should match target solids %)
 ```
 
 ### Step 4: Scale to Batch
@@ -174,9 +157,8 @@ Batch_volume_gal = Batch_volume_qt / 4
 
 ## Examples
 
-### Example 1: Standard Milk Replacer (Mix Into)
+### Example 1: Standard Milk Replacer
 **Inputs:**
-- Method: mix into
 - Target: 2.0 qt at 15.0% solids
 - Calves: 10
 
@@ -193,7 +175,6 @@ Per Calf:
 - Water: 1.75 qt
 - Total Volume: 2.0 qt
 - Solids: 15.0%
-- Mixing: INTO target volume
 
 Batch (10 calves):
 - Powder: 6.0 lb (96.0 oz)
@@ -202,42 +183,34 @@ Batch (10 calves):
 - Solids: 15.0%
 ```
 
-### Example 2: Higher Solids Colostrum Replacer (Mix Onto)
+### Example 2: High Solids Colostrum Replacer
 **Inputs:**
-- Method: mix onto
-- Target: 2.0 qt water at 18.0% solids
+- Target: 2.0 qt at 18.0% solids
 - Calves: 5
 
 **Calculation:**
-- For 18% in expanded volume, work backwards:
-  - Let P = powder_lb, W = 2.0 qt
-  - Final_vol = 2.0 + (P × 0.24)
-  - 0.18 = P / (Final_vol × 2)
-  - 0.18 = P / ((2.0 + 0.24P) × 2)
-  - Solve: P ≈ 0.78 lb = 12.5 oz
-- Water: 2.0 qt (full amount)
-- Final volume: 2.0 + (0.78 × 0.24) = 2.19 qt
-- Actual solids: (0.78 / (2.19 × 2)) × 100 = 17.8%
+- Powder needed: 0.18 × 2.0 × 2 = 0.72 lb = 11.5 oz → **11.5 oz**
+- Water needed: 2.0 - (0.72 × 0.24) = 1.827 qt → **1.75 qt**
+- Final volume: 2.0 qt
+- Actual solids: (0.72 / 4.0) × 100 = 18.0%
 
 **Output:**
 ```
 Per Calf:
-- Powder: 12.5 oz
-- Water: 2.0 qt (full)
-- Total Volume: 2.25 qt
-- Solids: 17.8%
-- Mixing: ONTO full water volume
+- Powder: 11.5 oz
+- Water: 1.75 qt
+- Total Volume: 2.0 qt
+- Solids: 18.0%
 
 Batch (5 calves):
-- Powder: 3.9 lb (62.5 oz)
-- Water: 2.5 gal (10.0 qt)
-- Total Volume: 2.8 gal (11.25 qt)
-- Solids: 17.8%
+- Powder: 3.6 lb (57.5 oz)
+- Water: 2.2 gal (8.75 qt)
+- Total Volume: 2.5 gal (10.0 qt)
+- Solids: 18.0%
 ```
 
-### Example 3: Low Solids Transition (Mix Into)
+### Example 3: Low Solids Transition
 **Inputs:**
-- Method: mix into
 - Target: 2.5 qt at 12.0% solids
 - Calves: 15
 
@@ -254,7 +227,6 @@ Per Calf:
 - Water: 2.25 qt
 - Total Volume: 2.5 qt
 - Solids: 12.0%
-- Mixing: INTO target volume
 
 Batch (15 calves):
 - Powder: 8.9 lb (142.5 oz)
@@ -269,16 +241,15 @@ Batch (15 calves):
 
 ### Must NOT
 1. **Mix unit systems** (never use metric in output)
-2. **Assume mixing method** (always require user to specify)
-3. **Ignore volume expansion** (0.24 qt/lb is non-negotiable)
-4. **Show excessive precision** (follow rounding rules)
-5. **Calculate for calves < 1** (batch size minimum = 1)
-6. **Accept solids < 8% or > 25%** (flag as outside normal range)
+2. **Ignore volume displacement** (0.24 qt/lb is non-negotiable)
+3. **Show excessive precision** (follow rounding rules)
+4. **Calculate for calves < 1** (batch size minimum = 1)
+5. **Accept solids < 8% or > 25%** (flag as outside normal range)
 
 ### Must Always
 1. **Show both per-calf and batch**
 2. **Display solids % in every output**
-3. **Label mixing method clearly** (INTO vs ONTO)
+3. **Account for powder displacement in water calculation**
 4. **Apply rounding rules consistently**
 5. **Flag unusual inputs** (e.g., "12% solids is low for colostrum")
 
@@ -288,11 +259,10 @@ Before calculating:
 - Solids % in range [8, 25]
 - Volume per calf in range [0.5, 6.0] qt
 - Number of calves ≥ 1
-- Mixing method specified
 
 After calculating:
 - Water volume is positive
-- Final volume is reasonable (0.5–6 qt per calf)
+- Final volume matches target
 - Batch totals scale correctly
 ```
 
@@ -315,15 +285,14 @@ After calculating:
 - Newborn calves: 2.0–2.5 qt (8–10% body weight)
 ```
 
-### Negative Water (Mix Into Error)
+### Negative Water Error
 ```
-❌ Error: Cannot mix into X.X qt at Y.Y% solids.
+❌ Error: Cannot achieve X.X qt at Y.Y% solids.
 Powder volume (Z.Z qt) exceeds target volume.
 
 Solutions:
 1. Increase target volume
 2. Reduce solids %
-3. Use "mix onto" method instead
 ```
 
 ---
@@ -332,17 +301,17 @@ Solutions:
 
 ### Pattern 1: Standard Feeding Program Setup
 ```
-Input: "10 calves, 2 qt per calf at 15% solids, mix into"
+Input: "10 calves, 2 qt per calf at 15% solids"
 → Provides per-calf recipe + batch totals
 → Farm can tape batch recipe to mixing cart
 ```
 
 ### Pattern 2: Troubleshooting Existing Program
 ```
-Input: "We're mixing 8 oz powder onto 2 qt water per calf. What solids are we actually getting?"
-→ Calculate actual solids (likely ~13.8%)
-→ Compare to intended target
-→ Flag if discrepancy exists
+Input: "We're using 8 oz powder + 2 qt water per calf. What solids are we getting?"
+→ Calculate actual solids
+→ Show that 8 oz in 2 qt = ~13.0% (if they want 15%, need 9.6 oz)
+→ Flag discrepancy if exists
 ```
 
 ### Pattern 3: Colostrum Feeding Design
@@ -386,9 +355,9 @@ User Input → Calf Math Engine → Formatted Output
 ## Testing Checklist
 
 ### Test Cases
-1. ✓ Standard MR at 15% (mix into 2 qt)
-2. ✓ Low solids transition at 12% (mix into 2.5 qt)
-3. ✓ High solids CR at 18% (mix onto 2 qt)
+1. ✓ Standard MR at 15% (2 qt target)
+2. ✓ Low solids transition at 12% (2.5 qt target)
+3. ✓ High solids CR at 18% (2 qt target)
 4. ✓ Batch of 1 calf (edge case)
 5. ✓ Batch of 50 calves (large batch)
 6. ✓ Negative water scenario (error handling)
@@ -409,7 +378,7 @@ User Input → Calf Math Engine → Formatted Output
 ### Update Triggers
 - New research on volume displacement factors
 - Changes to rounding conventions (user feedback)
-- New mixing methods (e.g., automated systems)
+- New product types with different displacement properties
 
 ### Version History
 - v1.0: Initial specification (Feb 2026)
@@ -422,15 +391,16 @@ User Input → Calf Math Engine → Formatted Output
 ┌─────────────────────────────────────────────────────────┐
 │ CALF MATH ENGINE - QUICK REF                            │
 ├─────────────────────────────────────────────────────────┤
-│ MIXING METHODS                                          │
-│ • INTO: powder + water = target (less water)            │
-│ • ONTO: powder + full water = expanded volume           │
+│ MIXING METHOD                                           │
+│ • Powder + water = target volume (exact)                │
+│ • Powder displaces liquid → use less water              │
 │                                                         │
 │ VOLUME DISPLACEMENT                                     │
 │ • 1 lb powder = 0.24 qt volume                          │
+│ • Water = Target_qt - (Powder_lb × 0.24)                │
 │                                                         │
 │ SOLIDS FORMULA                                          │
-│ • Solids% = (Powder_lb / Final_qt × 2) × 100            │
+│ • Solids% = (Powder_lb / Target_qt × 2) × 100           │
 │                                                         │
 │ ROUNDING                                                │
 │ • Ounces: nearest 0.5                                   │
