@@ -408,8 +408,7 @@ User Input → Calf Math Engine → Formatted Output
 │ • Solids%: nearest 0.1                                  │
 │                                                         │
 │ TYPICAL RANGES                                          │
-│ • Milk replacer: 12–15% solids                          │
-│ • Colostrum replacer: 15–18% solids                     │
-│ • Volume per calf: 1.5–3.0 qt                           │
+│ • Milk replacer: 12–15% solids                          │                     
+│ • Volume per calf:2.0-4.0 qt                            │
 └─────────────────────────────────────────────────────────┘
 ```
