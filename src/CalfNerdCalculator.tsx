@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, CSSProperties } from 'react';
 
 // ============================================================================
 // 🐄 THE CALF NERD - LOGO INSTRUCTIONS
@@ -155,7 +155,7 @@ function MilkReplacerTab() {
   const costPerCalfDaily = costPerLb > 0 ? dailyPowderPerCalf * costPerLb : 0;
   const totalBatchCost = costPerLb > 0 ? totalPowderNeeded * costPerLb : 0;
 
-  const handleUnitToggle = (newUnit) => {
+  const handleUnitToggle = (newUnit: string) => {
     if (newUnit === volumeUnit) return;
     if (newUnit === 'quarts') {
       const quartsValue = volumePerCalf * 4;
@@ -166,7 +166,7 @@ function MilkReplacerTab() {
     setVolumeUnit(newUnit);
   };
 
-  const handleVolumeChange = (value) => {
+  const handleVolumeChange = (value: string) => {
     setVolumePerCalfInput(value);
     const parsed = parseFloat(value);
     if (volumeUnit === 'quarts') {
@@ -1017,7 +1017,7 @@ function ColostrumTab() {
   const [showInterpolation, setShowInterpolation] = useState(false);
   
   // Convert Brix to IgG using chart with linear interpolation
-  const getIgGFromBrix = (brix) => {
+  const getIgGFromBrix = (brix: number) => {
     if (brix < 18.0) {
       return { iggPerQuart: null, quality: 'inadequate', interpolated: false };
     }
@@ -1184,10 +1184,10 @@ function ColostrumTab() {
                     Linear interpolation between nearest chart points:
                   </div>
                   <div style={styles.interpolationText}>
-                    {result.lowerPoint.brix}% = {result.lowerPoint.iggPerQuart.toFixed(1)} g/qt
+                    {result.lowerPoint?.brix}% = {result.lowerPoint?.iggPerQuart.toFixed(1)} g/qt
                   </div>
                   <div style={styles.interpolationText}>
-                    {result.upperPoint.brix}% = {result.upperPoint.iggPerQuart.toFixed(1)} g/qt
+                    {result.upperPoint?.brix}% = {result.upperPoint?.iggPerQuart.toFixed(1)} g/qt
                   </div>
                   <div style={styles.interpolationText}>
                     Your {brixPercent.toFixed(1)}% = {iggPerQuart.toFixed(1)} g/qt
@@ -1556,7 +1556,7 @@ function FeedCalculator() {
   );
 }
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   container: {
     fontFamily: "'Nunito', 'Segoe UI', system-ui, sans-serif",
     maxWidth: '1100px',
